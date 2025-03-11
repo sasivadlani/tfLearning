@@ -1,5 +1,5 @@
 resource_group_name  = "sasikv984rg-dev"
-storage_account_name = "sasikv984sa-dev"
+storage_account_name = "sasikv984sadev"
 container_name       = "sasikv984sc-dev"
 key_vault_names = [
   "sasikv984kv-dev1",
