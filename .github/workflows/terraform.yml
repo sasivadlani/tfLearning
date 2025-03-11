@@ -18,6 +18,7 @@ env:
   TF_BACKEND_STORAGE_ACCOUNT: "terraformstoraccsasi"
   TF_BACKEND_CONTAINER: "terraformsccontainer"
   TF_BACKEND_KEY: "${{ github.event.inputs.environment }}.tfstate"
+  TF_BACKEND_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
 permissions:
   contents: read
@@ -42,6 +43,7 @@ jobs:
       - name: Terraform Init
         run: |
           terraform init \
+            -backend-config="subscription_id=$TF_BACKEND_SUBSCRIPTION_ID" \
             -backend-config="resource_group_name=$TF_BACKEND_RESOURCE_GROUP" \
             -backend-config="storage_account_name=$TF_BACKEND_STORAGE_ACCOUNT" \
             -backend-config="container_name=$TF_BACKEND_CONTAINER" \
@@ -69,6 +71,7 @@ jobs:
       - name: Terraform Init
         run: |
           terraform init \
+            -backend-config="subscription_id=$TF_BACKEND_SUBSCRIPTION_ID" \
             -backend-config="resource_group_name=$TF_BACKEND_RESOURCE_GROUP" \
             -backend-config="storage_account_name=$TF_BACKEND_STORAGE_ACCOUNT" \
             -backend-config="container_name=$TF_BACKEND_CONTAINER" \
@@ -102,6 +105,7 @@ jobs:
       - name: Terraform Init
         run: |
           terraform init \
+            -backend-config="subscription_id=$TF_BACKEND_SUBSCRIPTION_ID" \
             -backend-config="resource_group_name=$TF_BACKEND_RESOURCE_GROUP" \
             -backend-config="storage_account_name=$TF_BACKEND_STORAGE_ACCOUNT" \
             -backend-config="container_name=$TF_BACKEND_CONTAINER" \
@@ -133,6 +137,7 @@ jobs:
       - name: Terraform Init
         run: |
           terraform init \
+            -backend-config="subscription_id=$TF_BACKEND_SUBSCRIPTION_ID" \
             -backend-config="resource_group_name=$TF_BACKEND_RESOURCE_GROUP" \
             -backend-config="storage_account_name=$TF_BACKEND_STORAGE_ACCOUNT" \
             -backend-config="container_name=$TF_BACKEND_CONTAINER" \
