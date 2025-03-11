@@ -13,6 +13,11 @@ on:
           - prod
 
 env:
+  # Azure Authentication for Terraform
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   # Backend Configuration
   TF_BACKEND_RESOURCE_GROUP: "terraformRG"
   TF_BACKEND_STORAGE_ACCOUNT: "terraformstoraccsasi"
@@ -43,7 +48,7 @@ jobs:
       - name: Terraform Init
         run: |
           terraform init \
-            -backend-config="subscription_id=$TF_BACKEND_SUBSCRIPTION_ID" \
+            -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID" \
             -backend-config="resource_group_name=$TF_BACKEND_RESOURCE_GROUP" \
             -backend-config="storage_account_name=$TF_BACKEND_STORAGE_ACCOUNT" \
             -backend-config="container_name=$TF_BACKEND_CONTAINER" \
@@ -118,30 +123,3 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan-${{ github.event.inputs.environment }}
-
-  destroy:
-    name: 'Destroy'
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Azure CLI Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-
-      - name: Terraform Init
-        run: |
-          terraform init \
-            -backend-config="subscription_id=$TF_BACKEND_SUBSCRIPTION_ID" \
-            -backend-config="resource_group_name=$TF_BACKEND_RESOURCE_GROUP" \
-            -backend-config="storage_account_name=$TF_BACKEND_STORAGE_ACCOUNT" \
-            -backend-config="container_name=$TF_BACKEND_CONTAINER" \
-            -backend-config="key=$TF_BACKEND_KEY"
-
-      - name: Terraform Destroy
-        run: terraform destroy -var-file="environments/${{ github.event.inputs.environment }}.tfvars" -auto-approve
