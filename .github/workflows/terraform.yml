@@ -26,8 +26,6 @@ jobs:
   terraform-plan:
     name: 'Terraform Plan'
     runs-on: ubuntu-latest
-    env:
-      ARM_SKIP_PROVIDER_REGISTRATION: true
     outputs:
       tfplanExitCode: ${{ steps.tf-plan.outputs.exitcode }}
 
@@ -49,7 +47,7 @@ jobs:
         terraform_wrapper: false
 
     - name: Terraform Init
-      run: terraform init
+      run: terraform init -backend-config=key=environments/${{ github.event.inputs.environment }}.tfstate
 
     - name: Terraform Format
       run: terraform fmt -check
@@ -121,7 +119,7 @@ jobs:
       uses: hashicorp/setup-terraform@v3
 
     - name: Terraform Init
-      run: terraform init
+      run: terraform init -backend-config=key=environments/${{ github.event.inputs.environment }}.tfstate
 
     - name: Download Terraform Plan
       uses: actions/download-artifact@v4
