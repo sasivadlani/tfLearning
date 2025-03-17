@@ -1,0 +1,92 @@
+name: 'Terraform Destroy'
+
+on:
+    workflow_dispatch:
+        inputs:
+          environment:
+            description: 'Environment to destroy resources from. Choose from dev, test, or prod.'
+            required: true
+            type: choice
+            options:
+              - testing
+              - development
+              - production
+          confirm_destroy:
+            description: 'Type "DESTROY" to confirm resource destruction'
+            required: true
+            type: string
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+  ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+  ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+
+jobs:
+  terraform-destroy:
+    name: 'Terraform Destroy'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    if: github.event.inputs.confirm_destroy == 'DESTROY'
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Azure CLI Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Print Environment Variables
+      run: printenv | grep ARM_
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_wrapper: false
+
+    - name: Terraform Init
+      run: terraform init -backend-config=key=environments/${{ github.event.inputs.environment }}.tfstate
+
+    - name: Terraform Destroy Plan
+      id: tf-destroy-plan
+      run: |
+        terraform plan -destroy -var-file=environments/${{ github.event.inputs.environment }}.tfvars -out tfdestroyplan
+        terraform show -no-color tfdestroyplan > tfdestroyplan.txt
+
+    - name: Publish Destroy Plan
+      uses: actions/upload-artifact@v4
+      with:
+        name: tfdestroyplan
+        path: |
+          tfdestroyplan
+          tfdestroyplan.txt
+
+    - name: Create Destroy Plan Summary
+      id: tf-destroy-plan-string
+      run: |
+        TERRAFORM_PLAN=$(terraform show -no-color tfdestroyplan)
+        delimiter="$(openssl rand -hex 8)"
+        echo "summary<<${delimiter}" >> $GITHUB_OUTPUT
+        echo "## Terraform Destroy Plan Output" >> $GITHUB_OUTPUT
+        echo "<details><summary>Click to expand</summary>" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        echo '```terraform' >> $GITHUB_OUTPUT
+        echo "$TERRAFORM_PLAN" >> $GITHUB_OUTPUT
+        echo '```' >> $GITHUB_OUTPUT
+        echo "</details>" >> $GITHUB_OUTPUT
+        echo "${delimiter}" >> $GITHUB_OUTPUT
+
+    - name: Publish Destroy Plan to Task Summary
+      env:
+        SUMMARY: ${{ steps.tf-destroy-plan-string.outputs.summary }}
+      run: |
+        echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+
+    - name: Terraform Destroy
+      run: terraform apply -auto-approve tfdestroyplan
